@@ -3,10 +3,9 @@ author: Zhou Chen
 datetime: 2019/6/18 17:06
 desc: 构建CNN模型
 """
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Dropout, BatchNormalization, Flatten, Dense, AveragePooling2D
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import PReLU
-
+from tensorflow.python.keras.layers import Input, Conv2D, MaxPooling2D, Dropout, Flatten, Dense
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.layers import PReLU
 
 def CNN1(input_shape=(48, 48, 1), n_classes=8):
     """

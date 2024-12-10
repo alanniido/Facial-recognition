@@ -6,8 +6,12 @@ desc: 用于图片预处理，神经网络没有用到这部分
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
+import mediapipe as mp
 # import dlib
 
+# 初始化MediaPipe模块
+mp_face_mesh = mp.solutions.face_mesh
+mp_face_detection = mp.solutions.face_detection
 
 def add_noise(input_data):
     """
@@ -51,25 +55,31 @@ def adaptive_histogram_equalization(img):
     img = ycrcb
     return img
 
-
 def detection(img):
     """
     人脸检测
     :param img:
     :return:
     """
-    detector = dlib.get_frontal_face_detector()
-    dets = detector(img, 1)  # 使用detector进行人脸检测 dets为返回的结果
-    print("Number of faces detected: {}".format(len(dets)))  # 打印识别到的人脸个数
-    for index, face in enumerate(dets):
-        # 在图片中标注人脸，并显示
-        left = face.left()
-        top = face.top()
-        right = face.right()
-        bottom = face.bottom()
-        cv.rectangle(img, (left, top), (right, bottom), (0, 255, 0), 1)
-    return dets
-
+    with mp_face_detection.FaceDetection(min_detection_confidence=0.2) as face_detection:
+        img_rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        results = face_detection.process(img_rgb)
+        
+        dets = []
+        if results.detections:
+            for detection in results.detections:
+                bboxC = detection.location_data.relative_bounding_box
+                h, w, _ = img.shape
+                x = int(bboxC.xmin * w)
+                y = int(bboxC.ymin * h)
+                width = int(bboxC.width * w)
+                height = int(bboxC.height * h)
+                dets.append((x, y, width, height))
+                cv.rectangle(img, (x, y), (x + width, y + height), (0, 255, 0), 1)
+        
+        print("Number of faces detected: {}".format(len(dets)))
+        
+        return dets
 
 def predictor(img, dets):
     """
@@ -78,19 +88,20 @@ def predictor(img, dets):
     :param dets:
     :return:
     """
-    # shape_predictor_68_face_landmarks.dat是进行人脸标定的模型，它是基于HOG特征的，这里是他所在的路径
-    predictor_path = "../model/shape_predictor_68_face_landmarks.dat"
-    predictor = dlib.shape_predictor(predictor_path)
-    shape_list = []
-    for index, face in enumerate(dets):
-        shape = predictor(img, face)  # 寻找人脸的68个标定点
-        # 遍历所有点，打印出其坐标，并用绿色的圈表示出来
-        for _, pt in enumerate(shape.parts()):
-            pt_pos = (pt.x, pt.y)
-            cv.circle(img, pt_pos, 1, (0, 255, 0), 1)
-        shape_list.append(shape)
-    return shape_list
-
+    with mp_face_mesh.FaceMesh(max_num_faces=1) as face_mesh:
+        img_rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        results = face_mesh.process(img_rgb)
+        
+        shape_list = []
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                for landmark in face_landmarks.landmark:
+                    h, w, _ = img.shape
+                    cx, cy = int(landmark.x * w), int(landmark.y * h)
+                    cv.circle(img, (cx, cy), 1, (0, 255, 0), -1)  # 在特征点位置画圈
+                shape_list.append(face_landmarks)
+        
+        return shape_list
 
 def gray_norm(img):
     """
@@ -165,7 +176,6 @@ def deal(img):
     img_list, pt_pos_list = normailiztaion(img, dets, shape_list)
     return img, dets, shape_list, img_list, pt_pos_list
 
-
 def test():
     lena = cv.cvtColor(cv.imread('zhangyu.jpg', flags=1), cv.COLOR_BGR2RGB)
     print(lena.shape)
@@ -202,22 +212,18 @@ def test():
     plt.title('MF_image')
     plt.axis('off')
 
-    # 自适应中值滤波后的图片
-    # adaptive_median_blur_image = cv.ad
-
     # 直方图均衡化
     plt.subplot(325)
     plt.imshow(histogram_equalization(median_blur_image))
     plt.title('equalization_image')
     plt.axis('off')
 
-    # 直方图均衡化
+    # 自适应直方图均衡化
     plt.subplot(326)
     plt.imshow(adaptive_histogram_equalization(median_blur_image))
     plt.title('adaptive_equalization_image')
     plt.axis('off')
     plt.show()
-
 
 if __name__ == '__main__':
     test()

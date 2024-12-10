@@ -6,7 +6,7 @@ desc: 读取数据集
 from tqdm import tqdm
 import os
 import numpy as np
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
+from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 
 
 class Fer2013(object):

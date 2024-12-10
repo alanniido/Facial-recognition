@@ -55,7 +55,7 @@ def plot_feature_map():
     model.load_weights('../models/cnn3_best_weights.h5')
 
     def get_feature_map(model, layer_index, channels, input_img):
-        from tensorflow.keras import backend as K
+        from tensorflow.python.keras import backend as K
         layer = K.function([model.layers[0].input], [model.layers[layer_index].output])
         feature_map = layer([input_img])[0]
         import matplotlib.pyplot as plt

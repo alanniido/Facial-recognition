@@ -5,10 +5,16 @@ import os
 import argparse
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras.optimizers import SGD, Adam
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.utils.np_utils import to_categorical
+from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from tensorflow.python.keras.optimizer_v2 import gradient_descent as gradient_descent_v2
+SGD = gradient_descent_v2.SGD
+from tensorflow.python.keras.optimizer_v2 import adam as adam_v2
+Adam = adam_v2.Adam
+
+# from keras.src.legacy.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 
@@ -27,6 +33,8 @@ print(opt)
 
 if opt.dataset == "fer2013":
     expressions, x_train, y_train = Fer2013().gen_train()
+    x_train = x_train.reshape((x_train.shape[0], 48, 48, 1))
+
     _, x_valid, y_valid = Fer2013().gen_valid()
     _, x_test, y_test = Fer2013().gen_test()
     # target编码
@@ -127,5 +135,3 @@ else:
 if opt.plot_history:
     plot_loss(his.history, opt.dataset)
     plot_acc(his.history, opt.dataset)
-
-
